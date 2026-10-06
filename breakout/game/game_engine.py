@@ -10,6 +10,9 @@ Task 2:
 - Reset the ball after losing a life.
 - Show Game Over when all lives are lost.
 - Allow the player to restart.
+
+Task 3:
+- Add Normal, Strong, and Unbreakable bricks.
 """
 
 import pygame
@@ -37,10 +40,7 @@ class GameEngine:
 
         self.bricks = self._build_bricks()
 
-        # Task 2: player starts with 3 lives
         self.lives = STARTING_LIVES
-
-        # Task 2: game-over state
         self.game_over = False
 
     def _build_bricks(self):
@@ -60,12 +60,25 @@ class GameEngine:
                     BRICK_HEIGHT + BRICK_GAP
                 )
 
+                # Task 3:
+                # Different rows contain different brick types.
+
+                if row == 0:
+                    brick_type = Brick.UNBREAKABLE
+
+                elif row == 1:
+                    brick_type = Brick.STRONG
+
+                else:
+                    brick_type = Brick.NORMAL
+
                 bricks.append(
                     Brick(
                         x,
                         y,
                         BRICK_WIDTH,
-                        BRICK_HEIGHT
+                        BRICK_HEIGHT,
+                        brick_type
                     )
                 )
 
@@ -97,7 +110,6 @@ class GameEngine:
         self.game_over = False
 
     def handle_input(self, keys_pressed):
-        # Don't move the paddle after Game Over
         if self.game_over:
             return
 
@@ -112,17 +124,14 @@ class GameEngine:
         self.paddle.move(dx, WIDTH)
 
     def handle_keydown(self, key):
-        # Restart the game by pressing R
         if self.game_over and key == pygame.K_r:
             self.restart()
 
     def update(self):
-        # Don't update the game after Game Over
         if self.game_over:
             return
 
         self.ball.update()
-
         self.ball.bounce_off_walls(WIDTH)
 
         # Ball hitting the paddle
@@ -138,15 +147,21 @@ class GameEngine:
 
         # Ball hitting bricks
         for brick in self.bricks:
+
             if handle_ball_brick_collision(
                 self.ball,
                 brick
             ):
-                brick.hits_remaining -= 1
 
-                # Task 1:
-                # Remove brick when its hits are finished.
-                if brick.hits_remaining <= 0:
+                # Unbreakable bricks are never removed.
+                if brick.brick_type == Brick.UNBREAKABLE:
+                    break
+
+                # Apply the hit.
+                brick_hit = brick.hit()
+
+                # Remove the brick only when its hits are finished.
+                if brick_hit:
                     self.bricks.remove(brick)
 
                 break
@@ -157,6 +172,7 @@ class GameEngine:
 
             if self.lives <= 0:
                 self.game_over = True
+
             else:
                 self._reset_ball()
 
@@ -170,7 +186,7 @@ class GameEngine:
             self.bricks
         )
 
-        # Show number of bricks remaining
+        # Bricks remaining
         renderer.draw_text(
             surface,
             font,
@@ -178,7 +194,7 @@ class GameEngine:
             (10, 10)
         )
 
-        # Task 2: show lives
+        # Lives
         renderer.draw_text(
             surface,
             font,
@@ -186,7 +202,7 @@ class GameEngine:
             (10, 35)
         )
 
-        # Task 2: show Game Over
+        # Game Over
         if self.game_over:
             renderer.draw_text(
                 surface,
