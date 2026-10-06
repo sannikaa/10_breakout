@@ -1,18 +1,11 @@
 """
 GameEngine: owns the paddle, ball, and bricks.
 
-Task 1:
-- Fix brick collision so bricks are removed correctly.
-
-Task 2:
-- Add 3 lives.
-- Lose a life when the ball falls below the paddle.
-- Reset the ball after losing a life.
-- Show Game Over when all lives are lost.
-- Allow the player to restart.
-
-Task 3:
-- Add Normal, Strong, and Unbreakable bricks.
+Tasks:
+1. Brick collision and removal
+2. Lives and Game Over
+3. Normal, Strong, and Unbreakable bricks
+4. Score and combo multiplier
 """
 
 import pygame
@@ -43,6 +36,10 @@ class GameEngine:
         self.lives = STARTING_LIVES
         self.game_over = False
 
+        # Task 4: score and combo
+        self.score = 0
+        self.combo = 1
+
     def _build_bricks(self):
         bricks = []
 
@@ -60,15 +57,10 @@ class GameEngine:
                     BRICK_HEIGHT + BRICK_GAP
                 )
 
-                # Task 3:
-                # Different rows contain different brick types.
-
                 if row == 0:
                     brick_type = Brick.UNBREAKABLE
-
                 elif row == 1:
                     brick_type = Brick.STRONG
-
                 else:
                     brick_type = Brick.NORMAL
 
@@ -91,9 +83,6 @@ class GameEngine:
         )
 
     def restart(self):
-        """
-        Restart the game after Game Over.
-        """
         self.paddle = Paddle(
             x=WIDTH / 2,
             y=HEIGHT - 30
@@ -108,6 +97,9 @@ class GameEngine:
 
         self.lives = STARTING_LIVES
         self.game_over = False
+
+        self.score = 0
+        self.combo = 1
 
     def handle_input(self, keys_pressed):
         if self.game_over:
@@ -134,7 +126,7 @@ class GameEngine:
         self.ball.update()
         self.ball.bounce_off_walls(WIDTH)
 
-        # Ball hitting the paddle
+        # Ball hitting paddle
         if (
             self.ball.get_rect().colliderect(
                 self.paddle.get_rect()
@@ -153,15 +145,23 @@ class GameEngine:
                 brick
             ):
 
-                # Unbreakable bricks are never removed.
+                # Unbreakable bricks do not give points
+                # and do not disappear.
                 if brick.brick_type == Brick.UNBREAKABLE:
                     break
 
-                # Apply the hit.
-                brick_hit = brick.hit()
+                # Apply hit to brick
+                brick_removed = brick.hit()
 
-                # Remove the brick only when its hits are finished.
-                if brick_hit:
+                # Task 4: award points for every successful
+                # hit on a breakable brick.
+                self.score += 10 * self.combo
+
+                # Increase combo after a successful hit.
+                self.combo += 1
+
+                # Remove brick when completely broken.
+                if brick_removed:
                     self.bricks.remove(brick)
 
                 break
@@ -170,9 +170,11 @@ class GameEngine:
         if self.ball.is_below(HEIGHT):
             self.lives -= 1
 
+            # Task 4: missing the ball resets combo.
+            self.combo = 1
+
             if self.lives <= 0:
                 self.game_over = True
-
             else:
                 self._reset_ball()
 
@@ -186,7 +188,6 @@ class GameEngine:
             self.bricks
         )
 
-        # Bricks remaining
         renderer.draw_text(
             surface,
             font,
@@ -194,7 +195,6 @@ class GameEngine:
             (10, 10)
         )
 
-        # Lives
         renderer.draw_text(
             surface,
             font,
@@ -202,7 +202,22 @@ class GameEngine:
             (10, 35)
         )
 
-        # Game Over
+        # Task 4: display score
+        renderer.draw_text(
+            surface,
+            font,
+            f"Score: {self.score}",
+            (10, 60)
+        )
+
+        # Task 4: display combo
+        renderer.draw_text(
+            surface,
+            font,
+            f"Combo: x{self.combo}",
+            (10, 85)
+        )
+
         if self.game_over:
             renderer.draw_text(
                 surface,
